@@ -8,7 +8,8 @@
 ---
 --- macOS already does quarter steps when Shift+Option is held with a volume
 --- key; VolumeStep swallows each volume key and re-sends it with those
---- modifiers held.
+--- modifiers held. For half steps (1/32, about 3.1%), call
+--- `VolumeStep:configure({ steps = 2 })` and each press sends two quarter steps.
 ---
 --- Download: https://github.com/hugoh/VolumeStep.spoon/releases/latest
 
@@ -33,6 +34,34 @@ end
 
 obj._tap = nil
 
+--- VolumeStep.steps
+--- Variable
+--- Number of quarter steps (1/64) per volume key press. Defaults to 1 (quarter
+--- steps); set to 2 for half steps (1/32).
+obj.steps = 1
+
+--- VolumeStep:configure(config) -> VolumeStep
+--- Method
+--- Applies configuration options.
+---
+--- Parameters:
+---  * config - A table of options:
+---   * steps - Number of quarter steps per press (a positive integer); 2 gives half steps
+---
+--- Returns:
+---  * The VolumeStep object, for method chaining
+function obj:configure(config)
+	for k, v in pairs(config or {}) do
+		if k == "steps" then
+			assert(type(v) == "number" and v >= 1 and v % 1 == 0, "VolumeStep: steps must be a positive integer")
+			self.steps = v
+		else
+			error("VolumeStep: unknown option '" .. tostring(k) .. "'")
+		end
+	end
+	return self
+end
+
 local VOLUME_KEYS = { SOUND_UP = true, SOUND_DOWN = true }
 local QUARTER_STEP = { shift = true, alt = true }
 
@@ -41,7 +70,14 @@ function obj._handle(event)
 	if not VOLUME_KEYS[key.key] then return false end
 	local flags = event:getFlags()
 	if flags.shift and flags.alt then return false end
-	hs.eventtap.event.newSystemKeyEvent(key.key, key.down):setFlags(QUARTER_STEP):post()
+	local function send(down) hs.eventtap.event.newSystemKeyEvent(key.key, down):setFlags(QUARTER_STEP):post() end
+	if key.down then
+		for _ = 2, obj.steps do
+			send(true)
+			send(false)
+		end
+	end
+	send(key.down)
 	return true
 end
 

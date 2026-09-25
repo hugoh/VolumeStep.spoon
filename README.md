@@ -43,6 +43,12 @@ git clone https://github.com/hugoh/VolumeStep.spoon.git
 hs.loadSpoon("VolumeStep"):start()
 ```
 
+For half steps (1/32, about 3.1%), have each press send two quarter steps:
+
+```lua
+hs.loadSpoon("VolumeStep"):configure({ steps = 2 }):start()
+```
+
 ## API documentation
 
 Full API reference is generated from the docstrings in `init.lua` (`mise run docs`).

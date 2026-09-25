@@ -95,9 +95,40 @@ describe("volume keys", function()
 		assert.are.equal(0, #mock_hs._posted)
 	end)
 
+	it("sends extra quarter steps on key-down when steps > 1", function()
+		VolumeStep.steps = 2
+		press("SOUND_UP")
+		assert.are.equal(3, #mock_hs._posted)
+		assert.are.same({ true, false, true }, {
+			mock_hs._posted[1]._down,
+			mock_hs._posted[2]._down,
+			mock_hs._posted[3]._down,
+		})
+		press("SOUND_UP", false)
+		assert.are.equal(4, #mock_hs._posted)
+		assert.is_false(mock_hs._posted[4]._down)
+	end)
+
 	it("passes through other system keys", function()
 		assert.is_false(press("PLAY"))
 		assert.are.equal(0, #mock_hs._posted)
+	end)
+end)
+
+describe("configure", function()
+	it("sets steps and returns self", function()
+		assert.are.equal(VolumeStep, VolumeStep:configure({ steps = 2 }))
+		assert.are.equal(2, VolumeStep.steps)
+	end)
+
+	it("rejects invalid steps", function()
+		assert.has_error(function() VolumeStep:configure({ steps = 0 }) end)
+		assert.has_error(function() VolumeStep:configure({ steps = 1.5 }) end)
+		assert.are.equal(1, VolumeStep.steps)
+	end)
+
+	it("rejects unknown options", function()
+		assert.has_error(function() VolumeStep:configure({ stpes = 2 }) end)
 	end)
 end)
 
