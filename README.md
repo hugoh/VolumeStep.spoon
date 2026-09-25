@@ -46,9 +46,7 @@ hs.loadSpoon("VolumeStep"):start()
 For half steps (1/32, about 3.1%), have each press send two quarter steps:
 
 ```lua
-local vs = hs.loadSpoon("VolumeStep")
-vs.steps = 2
-vs:start()
+hs.loadSpoon("VolumeStep"):configure({ steps = 2 }):start()
 ```
 
 ## API documentation
