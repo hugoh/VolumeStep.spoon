@@ -95,6 +95,20 @@ describe("volume keys", function()
 		assert.are.equal(0, #mock_hs._posted)
 	end)
 
+	it("sends extra quarter steps on key-down when steps > 1", function()
+		VolumeStep.steps = 2
+		press("SOUND_UP")
+		assert.are.equal(3, #mock_hs._posted)
+		assert.are.same({ true, false, true }, {
+			mock_hs._posted[1]._down,
+			mock_hs._posted[2]._down,
+			mock_hs._posted[3]._down,
+		})
+		press("SOUND_UP", false)
+		assert.are.equal(4, #mock_hs._posted)
+		assert.is_false(mock_hs._posted[4]._down)
+	end)
+
 	it("passes through other system keys", function()
 		assert.is_false(press("PLAY"))
 		assert.are.equal(0, #mock_hs._posted)

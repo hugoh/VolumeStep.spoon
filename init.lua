@@ -8,7 +8,8 @@
 ---
 --- macOS already does quarter steps when Shift+Option is held with a volume
 --- key; VolumeStep swallows each volume key and re-sends it with those
---- modifiers held.
+--- modifiers held. For half steps (1/32, about 3.1%), set `VolumeStep.steps`
+--- to 2 and each press sends two quarter steps.
 ---
 --- Download: https://github.com/hugoh/VolumeStep.spoon/releases/latest
 
@@ -33,6 +34,12 @@ end
 
 obj._tap = nil
 
+--- VolumeStep.steps
+--- Variable
+--- Number of quarter steps (1/64) per volume key press. Defaults to 1 (quarter
+--- steps); set to 2 for half steps (1/32).
+obj.steps = 1
+
 local VOLUME_KEYS = { SOUND_UP = true, SOUND_DOWN = true }
 local QUARTER_STEP = { shift = true, alt = true }
 
@@ -41,7 +48,14 @@ function obj._handle(event)
 	if not VOLUME_KEYS[key.key] then return false end
 	local flags = event:getFlags()
 	if flags.shift and flags.alt then return false end
-	hs.eventtap.event.newSystemKeyEvent(key.key, key.down):setFlags(QUARTER_STEP):post()
+	local function send(down) hs.eventtap.event.newSystemKeyEvent(key.key, down):setFlags(QUARTER_STEP):post() end
+	if key.down then
+		for _ = 2, obj.steps do
+			send(true)
+			send(false)
+		end
+	end
+	send(key.down)
 	return true
 end
 
