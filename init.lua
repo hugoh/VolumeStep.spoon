@@ -94,8 +94,22 @@ function obj:isRunning() return self._tap ~= nil and self._tap:isEnabled() end
 ---  * The VolumeStep object, for method chaining
 function obj:start()
 	if self:isRunning() then return self end
+	if self._tap then self._tap:stop() end
 	self._tap = hs.eventtap.new({ hs.eventtap.event.types.systemDefined }, obj._handle):start()
+	self._wakeWatcher = self._wakeWatcher or hs.caffeinate.watcher.new(function(event) self:_onPowerEvent(event) end)
+	self._wakeWatcher:start()
 	return self
+end
+
+-- macOS can disable an event tap (e.g. after a timeout or across sleep) without telling
+-- Hammerspoon, which leaves the volume keys silently back at full steps.
+function obj:_onPowerEvent(event)
+	local watcher = hs.caffeinate.watcher
+	if event ~= watcher.systemDidWake and event ~= watcher.screensDidUnlock then return end
+	if self._tap and not self._tap:isEnabled() then
+		self.log.w("Event tap was disabled; re-enabling")
+		self._tap:start()
+	end
 end
 
 --- VolumeStep:stop() -> VolumeStep
@@ -105,6 +119,7 @@ end
 --- Returns:
 ---  * The VolumeStep object, for method chaining
 function obj:stop()
+	if self._wakeWatcher then self._wakeWatcher:stop() end
 	if self._tap then
 		self._tap:stop()
 		self._tap = nil
