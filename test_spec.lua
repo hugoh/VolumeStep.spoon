@@ -5,6 +5,7 @@ local VolumeStep
 
 local function makeLogger()
 	local l = { _infos = {} }
+	l.w = function() end
 	l.f = function(fmt, ...) table.insert(l._infos, string.format(fmt, ...)) end
 	return l
 end
@@ -48,6 +49,23 @@ before_each(function()
 		end,
 	}
 
+	mock_hs.caffeinate = {
+		watcher = { systemDidWake = 1, screensDidUnlock = 2, systemWillSleep = 3 },
+	}
+	mock_hs.caffeinate.watcher.new = function(fn)
+		local w = { _fn = fn, _running = false }
+		function w:start()
+			self._running = true
+			return self
+		end
+		function w:stop()
+			self._running = false
+			return self
+		end
+		mock_hs._wakeWatcher = w
+		return w
+	end
+
 	package.loaded.hs = nil
 	_G.hs = mock_hs
 
@@ -69,6 +87,43 @@ describe("start/stop", function()
 
 	it("stop() stops the tap", function()
 		VolumeStep:start():stop()
+		assert.is_false(VolumeStep:isRunning())
+	end)
+end)
+
+describe("tap recovery", function()
+	it("re-enables a tap that macOS disabled when the system wakes", function()
+		VolumeStep:start()
+		mock_hs._tap._running = false
+		mock_hs._wakeWatcher._fn(mock_hs.caffeinate.watcher.systemDidWake)
+		assert.is_true(VolumeStep:isRunning())
+	end)
+
+	it("re-enables the tap when the screen unlocks", function()
+		VolumeStep:start()
+		mock_hs._tap._running = false
+		mock_hs._wakeWatcher._fn(mock_hs.caffeinate.watcher.screensDidUnlock)
+		assert.is_true(VolumeStep:isRunning())
+	end)
+
+	it("leaves a healthy tap alone", function()
+		VolumeStep:start()
+		local tap = mock_hs._tap
+		mock_hs._wakeWatcher._fn(mock_hs.caffeinate.watcher.systemDidWake)
+		assert.are.equal(tap, VolumeStep._tap)
+	end)
+
+	it("ignores unrelated power events", function()
+		VolumeStep:start()
+		mock_hs._tap._running = false
+		mock_hs._wakeWatcher._fn(mock_hs.caffeinate.watcher.systemWillSleep)
+		assert.is_false(VolumeStep:isRunning())
+	end)
+
+	it("stop() stops the wake watcher so the keys aren't reclaimed", function()
+		VolumeStep:start():stop()
+		assert.is_false(mock_hs._wakeWatcher._running)
+		mock_hs._wakeWatcher._fn(mock_hs.caffeinate.watcher.systemDidWake)
 		assert.is_false(VolumeStep:isRunning())
 	end)
 end)
