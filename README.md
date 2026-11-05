@@ -1,7 +1,7 @@
 # VolumeStep Spoon
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Hammerspoon Spoon](https://img.shields.io/badge/Hammerspoon-Spoon-FFA500.svg)](https://www.hammerspoon.org/docs/index.html)
+[![Hammerspoon Spoon](https://img.shields.io/badge/Hammerspoon-Spoon-FFA500.svg)](https://volumestep-spoon.larve.net/)
 
 A Hammerspoon Spoon that makes the volume keys change the volume in quarter steps (about 1.6% instead of macOS's 6.25%), keeping the native volume HUD.
 
@@ -51,4 +51,4 @@ hs.loadSpoon("VolumeStep"):configure({ steps = 2 }):start()
 
 ## API documentation
 
-Full API reference is generated from the docstrings in `init.lua` (`mise run docs`).
+Full [API reference](https://volumestep-spoon.larve.net/) is generated from the docstrings in `init.lua` (`mise run docs`).
